@@ -1,0 +1,14 @@
+! INPUT FILE
+
+
+
+
+
+! INPUT OBJECT
+&conf
+depth = 2.
+radius = 5.
+numberOfEdges = 21
+!must be odd
+numberOfLayers = 20
+/
