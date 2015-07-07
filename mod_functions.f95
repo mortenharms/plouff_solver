@@ -11,7 +11,7 @@ module mod_functions
 	
 	! a structure to contain all relevant varables
 	type :: control_struct
-		real :: depth, radius
+		real :: depth, radius, rho, G
 		integer :: numberOfEdges, numberOfLayers
 	end type control_struct
 		
@@ -188,11 +188,105 @@ module mod_functions
 	end subroutine calc_A
 	
 	
-	! PRINT POLYGON
-	
+	subroutine sum_grav(config, poly)
+		type(control_struct), intent(in) :: config
+		type(polygon), allocatable, dimension(:), intent(in) :: poly
+
+
+	end subroutine sum_grav
+
+		
 	! GRAV_PRISM
+	subroutine calc_grav_polygon(config,poly, gravi_poly, displacement_x, displacement_y)
+		type(control_struct), intent(in) :: config
+		type(polygon), intent(in) :: poly
+		real, intent(in), optional :: displacement_x, displacement_y
+		real, intent(out) :: gravi_poly
+		real, dimension(:), allocatable :: x, y, r, S, dx, dy, ds,  d1, d2, C, Rk1, Rk2, P, A, summe
+		integer :: edge, nEdges, sm, sp
+		
+		nEdges = config%numberOfEdges
+		x = displacement_x + poly%x
+		y = displacement_y + poly%y
+		summe = 0
+		
+		allocate(dx(nEdges))
+		allocate(dy(nEdges))
+		allocate(ds(nEdges))
+		allocate(r(nEdges))
+		allocate(S(nEdges))
+		allocate(C(nEdges))
+		allocate(P(nEdges))
+		allocate(Rk1(nEdges))
+		allocate(Rk2(nEdges))
+		allocate(summe(nEdges))
+		
+		! calc r 
+		r(:) = sqrt(x(:)**2 + y(:)**2)
+		
+		! calc S
+		
+		S(:) = dx(:)/ds(:)
+		! S = dx/dy
+		! S(1:nEdges) = dx(1:nEdges) / ds(1:nEdges)
+		
+		! Calc delta x, delta y
+		do edge = 1, nEdges
+			dx(edge) = x(edge+1) - x(edge)
+			dy(edge) = y(edge+1) - y(edge)
+		end do
+		
+		! calc delta S
+		ds(1:nEdges)=sqrt(dx(1:nEdges)**2 + dy(1:nEdges)**2)
+		
+		! calc C
+		C(1:nEdges) = dy(1:nEdges)/ds(1:nEdges)
+		
+		! calc P
+		P(1:nEdges) = x(1:nEdges)*C(1:nEdges) - y(1:nEdges)*S(1:nEdges)
+		
+		!Calc Rk1, Rk2
+		Rk1(1:nEdges) = r(1:nEdges)**2 + poly%z1**2
+		Rk2(1:nEdges) = r(1:nEdges)**2 + poly%z2**2
+		
+		! calc d1, d2
+		do edge = 1, nEdges
+			d1(edge) = x(edge)*S(edge) + y(edge)*C(edge)
+			d2(edge) = x(edge+1)*S(edge) + y(edge+1)*C(edge)
+			A(edge) = acos((y(edge)*y(edge+1) - y(edge)*y(edge+1))/(r(edge)*r(edge+1)))
+		end do
+		
+		
+		do edge = 1, nEdges
+
+			 if (P(edge) .lt. 0) then
+				 sp = -1
+			else if (P(edge) .gt. 0) THEN
+				sp = 1
+			else
+				! Gravi = 0!!!!!
+			end if
+			
+			summe(edge)	= sp * A(edge) * (poly%z1 - poly%z2) &
+					+ poly%z2*( atan((poly%z2*d1(edge))/(P(edge)*Rk2(edge))) - atan((poly%z2*d2(edge))/(P(edge)*Rk2(edge+1)))) &
+					+ poly%z1*( atan((poly%z1*d1(edge))/(P(edge)*Rk1(edge))) - atan((poly%z1*d2(edge))/(P(edge)*Rk1(edge+1)))) &
+					- P(edge) * log( ((Rk2(edge+1)+d2(edge))/(Rk2(edge)+d1(edge)))*((Rk1(edge)+d2(edge))/(Rk2(edge)+d2(edge))) )
+					
+			
+		end do
+		
+		gravi_poly = config%rho * config%G * sum(summe)
+
+	end subroutine calc_grav_polygon
 	
-	! CALC_EDGES
+	
+	
+	
+	
+	subroutine calc_analytical_solution( )
+		
+	end subroutine calc_analytical_solution
+	
 	
 end module mod_functions
 
