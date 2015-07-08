@@ -4,7 +4,7 @@
 
 ## display plot
 set title "for testing purpose the sphere"
-set view 60,30
+set view 90,0
 
 set view equal xyz
 

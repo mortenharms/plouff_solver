@@ -6,7 +6,7 @@ EXECUTABLE = plouff.x
 # set default compiler and other
 #-----------------------------------
 FC = gfortran
-FFLAGS = -fbounds-check  -O0
+FFLAGS = -fbounds-check -Wall -Wtabs  -O0
 
 #-----------------------------------
 # list of allowed suffixes (first cleared)

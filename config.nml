@@ -6,9 +6,13 @@
 
 ! INPUT OBJECT
 &conf
-depth = 2.
-radius = 5.
-numberOfEdges = 21
-!must be odd
+! Dichte im Störkörper
+rho=200
+depth = 4.
+radius = 2.
+numberOfEdges = 20
 numberOfLayers = 20
+!   1D Profil lentgh in [m]
+length_1D = 20
+tick_1D = 1
 /
