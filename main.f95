@@ -15,11 +15,12 @@ program plouff_solver
 	
 	call create_sphere(configurations,poly)
 	
-	call output_one_prism(configurations,poly)
-	call output_sphere(configurations,poly)
+	!call output_one_prism(configurations,poly)
+	!call output_sphere(configurations,poly)
 	
-    
+    call calc_profil_vector(configurations)
     call profil_1d_x(configurations,poly,profil_1d)
+        
     call save_profile_1d(configurations,profil_1d)
     
     

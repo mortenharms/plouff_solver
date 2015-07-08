@@ -34,7 +34,7 @@ run: $(EXECUTABLE)
 	./$(EXECUTABLE)
 	
 plot: $(EXECUTABLE)
-	./$(EXECUTABLE) && gnuplot sphere.plt 
+	./$(EXECUTABLE) && gnuplot plot_1d.plt 
 
 
 clean:

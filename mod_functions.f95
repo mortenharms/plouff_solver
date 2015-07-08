@@ -32,7 +32,7 @@ module mod_functions
     integer :: i
     
     ! calculate the length of the vector
-    config%vector_length_1D = int(config%length_1D/config%tick_1D)
+    config%vector_length_1D = int(config%length_1D/config%tick_1D)+1
     
     ! allocate the new vector with the length from above
     allocate(config%profil_vector_1D(config%vector_length_1D))
@@ -97,10 +97,10 @@ module mod_functions
     if (status .ne. 0) stop 'ALLOCATION OF POLYGON-STRUCT FAILED'
     do i=1,config%numberOfLayers
         ! +1 because the first corner is equal to the last corner
-        allocate(poly(i)%x(config%numberOfEdges + 1), stat=status)
+        allocate(poly(i)%x(config%numberOfEdges), stat=status)
         if (status .ne. 0) stop 'ALLOCATION OF X FAILED'
         
-        allocate(poly(i)%y(config%numberOfEdges + 1), stat=status)
+        allocate(poly(i)%y(config%numberOfEdges), stat=status)
         if (status .ne. 0) stop 'ALLOCATION OF Y FAILED'
     end do
 
@@ -144,8 +144,8 @@ module mod_functions
         end do
         
         ! the first corner ist equal to the last corner
-        poly(k)%x(config%numberOfEdges+1) = poly(k)%x(1)
-        poly(k)%y(config%numberOfEdges+1) = poly(k)%y(1)
+        !poly(k)%x(config%numberOfEdges+1) = poly(k)%x(1)
+        !poly(k)%y(config%numberOfEdges+1) = poly(k)%y(1)
     end do
 
     ! later: maybe dynamic number of edges... (fewer edges for small polygons...)
@@ -207,35 +207,21 @@ module mod_functions
     type(polygon), allocatable, dimension(:), intent(in) :: poly
     real, allocatable, dimension(:), intent(out) :: profil_1d
     integer :: i
-    
-    !!!!DEALLOCATE EVERYWHERE
+
     
     allocate(profil_1d(config%vector_length_1D))
-    
+
     ! schleife ueber sum_grav
     do i = 1, config%vector_length_1D
+		    
         call sum_grav(config, poly, profil_1d(i), config%profil_vector_1D(i),0.)
     end do
-    
+
     end subroutine profil_1d_x
     
     
     
-    subroutine save_profile_1d(config,profil_1d)
-    type(control_struct), intent(in) :: config
-    real, dimension(:), intent(in) :: profil_1d
-    integer :: i,stat10
-    
-    open(10, file='profil_1D.dat', form='formatted', action='write', iostat=stat10)
-    if(stat10 .ne. 0) stop 'OPEN profil_1D.dat FAILED'
-    
-    do i = 1, config%vector_length_1D
-        write(10,'(F12.9,x,F12.9)') config%profil_vector_1D(i), profil_1d(i)
-    end do
-    
-    close(10)
-    
-    end subroutine save_profile_1d
+
     
     
     
@@ -247,7 +233,7 @@ module mod_functions
         real, intent(out) :: grav_body
         integer :: pIndex
         real, allocatable, dimension(:) :: grav_poly
-        
+
          !!!!DEALLOCATE EVERYWHERE
         allocate(grav_poly(config%numberOfLayers))
         
@@ -257,7 +243,7 @@ module mod_functions
         end do
         
         grav_body = sum(grav_poly)
-        
+
         deallocate(grav_poly)
     end subroutine sum_grav
 
@@ -269,18 +255,18 @@ module mod_functions
         type(polygon), intent(in) :: poly
         real, intent(in), optional :: displacement_x, displacement_y
         real, intent(out) :: gravi_poly
-        real, dimension(:), allocatable :: x, y, r, S, dx, dy, ds,  d1, d2, C, Rk1, Rk2, P, A, summe
+        real, dimension(:), allocatable :: x, y, rk, S, dx, dy, ds,  d1, d2, C, Rk1, Rk2, P, A, summe
         real, parameter :: G = 6.67384e-11
-        integer :: edge, nEdges, sp
-        
+        integer :: edge,nextEdge, nEdges, sp
+
         nEdges = config%numberOfEdges
-        
-        summe = 0
 
         allocate(dx(nEdges))
         allocate(dy(nEdges))
         allocate(ds(nEdges))
-        allocate(r(nEdges))
+        allocate(d1(nEdges))
+        allocate(d2(nEdges))
+        allocate(rk(nEdges))
         allocate(S(nEdges))
         allocate(C(nEdges))
         allocate(P(nEdges))
@@ -288,72 +274,103 @@ module mod_functions
         allocate(Rk2(nEdges))
         allocate(summe(nEdges))
         allocate(x(nEdges))
-        allocate(y(nEdges))       
+        allocate(y(nEdges)) 
+        allocate(A(nEdges))
+              
+        summe = 0.
         
         x = displacement_x + poly%x
         y = displacement_y + poly%y
         
-        ! calc r 
-        r(:) = sqrt(x(:)**2 + y(:)**2)
         
-        ! calc S
         
-        S(:) = dx(:)/ds(:)
-        ! S = dx/dy
-        ! S(1:nEdges) = dx(1:nEdges) / ds(1:nEdges)
-        
+        ! calc rk
+        do edge = 1,nEdges
+            rk(edge) = sqrt(x(edge)**2 + y(edge)**2)
+            !print*, rk(edge)
+        end do
+
+
         ! Calc delta x, delta y
         do edge = 1, nEdges
-            dx(edge) = x(edge+1) - x(edge)
-            dy(edge) = y(edge+1) - y(edge)
-        end do
-        
-        ! calc delta S
-        ds(1:nEdges)=sqrt(dx(1:nEdges)**2 + dy(1:nEdges)**2)
-        
-        ! calc C
-        C(1:nEdges) = dy(1:nEdges)/ds(1:nEdges)
-        
-        ! calc P
-        P(1:nEdges) = x(1:nEdges)*C(1:nEdges) - y(1:nEdges)*S(1:nEdges)
-        
-        !Calc Rk1, Rk2
-        Rk1(1:nEdges) = r(1:nEdges)**2 + poly%z1**2
-        Rk2(1:nEdges) = r(1:nEdges)**2 + poly%z2**2
-        
-        ! calc d1, d2
-        do edge = 1, nEdges
-            d1(edge) = x(edge)*S(edge) + y(edge)*C(edge)
-            d2(edge) = x(edge+1)*S(edge) + y(edge+1)*C(edge)
-            A(edge) = acos((y(edge)*y(edge+1) - y(edge)*y(edge+1))/(r(edge)*r(edge+1)))
-        end do
-        
-        
-        do edge = 1, nEdges
-
-             if (P(edge) .lt. 0) then
-                 sp = -1
-            else if (P(edge) .gt. 0) THEN
-                sp = 1
+            if(edge .eq. nEdges) then
+                nextEdge = 1
             else
-                !@FIXME: Gravi = 0!!!!!
+                nextEdge = edge + 1
             end if
             
-            summe(edge) = sp * A(edge) * (poly%z1 - poly%z2) &
-                    + poly%z2*( atan((poly%z2*d1(edge))/(P(edge)*Rk2(edge))) - atan((poly%z2*d2(edge))/(P(edge)*Rk2(edge+1)))) &
-                    + poly%z1*( atan((poly%z1*d1(edge))/(P(edge)*Rk1(edge))) - atan((poly%z1*d2(edge))/(P(edge)*Rk1(edge+1)))) &
-                    - P(edge) * log( ((Rk2(edge+1)+d2(edge))/(Rk2(edge)+d1(edge)))*((Rk1(edge)+d2(edge))/(Rk2(edge)+d2(edge))) )
-                    
+            dx(edge) = x(nextEdge) - x(edge)
+            dy(edge) = y(nextEdge) - y(edge)
+            ds(edge) = sqrt(dx(edge)**2 + dy(edge)**2)
+            P(edge) = ((x(edge)*y(nextEdge)) - (x(nextEdge)*y(edge)))/ds(edge)
+            S(edge) = dx(edge)/ds(edge)
+            C(edge) = dy(edge)/ds(edge)
+            Rk1(edge) = sqrt(rk(edge)**2 + poly%z1**2)
+            Rk2(edge) = sqrt(rk(edge)**2 + poly%z2**2)
+            d1(edge) = (x(edge)*S(edge)) + (y(edge)*C(edge))
+            d2(edge) = (x(nextEdge)*S(edge)) + (y(nextEdge)*C(edge))
+            A(edge) = acos(((x(edge)*x(nextEdge)) + (y(edge)*y(nextEdge)))/(rk(edge)*rk(nextEdge)))
             
-        end do
-        
-        gravi_poly = config%rho * G * sum(summe)
 
+            if(isnan(A(edge))) then
+				print*,edge,nextEdge
+				
+				!print*, 'edge, x(edge),x(nextEdge),y(edge),y(nextEdge),rk(edge),rk(nextEdge)'
+				!print*, edge, x(edge),x(nextEdge),y(edge),y(nextEdge),rk(edge),rk(nextEdge)
+				!print*, ((x(edge)*x(nextEdge)) + (y(edge)*y(nextEdge)))/(rk(edge)*rk(nextEdge))
+				
+
+				!print*,'[',x(edge),',',y(edge),']','[',x(nextEdge),',',y(nextEdge),']'
+			end if
+        end do
+
+        
+        do edge = 1, nEdges
+            if(edge .eq. nEdges) then
+                nextEdge = 1
+            else
+                nextEdge = edge + 1
+            end if
+
+            if (P(edge) .gt. 0) then
+                sp = 1
+                summe(edge) = sp * A(edge) * (poly%z2 - poly%z1) &
+                    + poly%z2*( atan((poly%z2 * d1(edge)) / (P(edge) * Rk2(edge))) - &
+                      atan((poly%z2 * d2(edge)) / (P(edge) * Rk2(nextEdge)))) &
+                    - poly%z1*( atan((poly%z1 * d1(edge)) / (P(edge) * Rk1(edge))) - &
+                      atan((poly%z1 * d2(edge)) / (P(edge) * Rk1(nextEdge)))) &
+                    - P(edge) * log( ((Rk2(nextEdge) +d2(edge))/ (Rk2(edge) + d1(edge))) * &
+                      ((Rk1(edge) + d1(edge)) / (Rk1(nextEdge) + d2(edge))) )
+                    
+            else if (P(edge) .lt. 0) then
+                sp = -1
+                summe(edge) = sp * A(edge) * (poly%z2 - poly%z1) &
+                    + poly%z2*( atan((poly%z2 * d1(edge)) / (P(edge) * Rk2(edge))) - &
+                      atan((poly%z2 * d2(edge)) / (P(edge) * Rk2(nextEdge)))) &
+                    - poly%z1*( atan((poly%z1 * d1(edge)) / (P(edge) * Rk1(edge))) - &
+                      atan((poly%z1 * d2(edge)) / (P(edge) * Rk1(nextEdge)))) &
+                    - P(edge) * log( ((Rk2(nextEdge) +d2(edge))/ (Rk2(edge) + d1(edge))) * &
+                      ((Rk1(edge) + d1(edge)) / (Rk1(nextEdge) + d2(edge))) )
+                    
+            else
+                summe(edge) = 0
+            end if
+            !if(isnan(summe(edge))) then
+			!	print*, x(edge),y(edge),A(edge)
+			!end if
+            
+ 
+        end do
+        ! calc in mGal
+        gravi_poly = config%rho * G * sum(summe)*100000
+        
 
         deallocate(dx)
         deallocate(dy)
         deallocate(ds)
-        deallocate(r)
+        deallocate(d1)
+        deallocate(d2)
+        deallocate(rk)
         deallocate(S)
         deallocate(C)
         deallocate(P)
@@ -362,9 +379,24 @@ module mod_functions
         deallocate(summe)
         deallocate(x)
         deallocate(y)
+        deallocate(A)
     end subroutine calc_grav_polygon
     
+    subroutine save_profile_1d(config,profil_1d)
+    type(control_struct), intent(in) :: config
+    real, dimension(:), intent(in) :: profil_1d
+    integer :: i,stat10
     
+    open(10, file='profil_1D.dat', form='formatted', action='write', iostat=stat10)
+    if(stat10 .ne. 0) stop 'OPEN profil_1D.dat FAILED'
+
+    do i = 1, config%vector_length_1D
+        write(10,'(F13.8,x,F13.9)') config%profil_vector_1D(i), profil_1d(i)
+    end do
+    
+    close(10)
+    
+    end subroutine save_profile_1d
     
     
     
