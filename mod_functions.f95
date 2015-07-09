@@ -19,13 +19,21 @@ module mod_functions
     end type control_struct
         
     
-
-
-    
-    
     
     !!!! FUNCTIONS
     contains
+
+
+	real function round_6(input)
+		real :: input, temp
+		
+		temp = input*100000
+		round_6  = anint(temp) / 100000
+		return
+	
+	end function round_6
+    
+    
     
     subroutine calc_profil_vector(config)
     type(control_struct), intent(inout) :: config
@@ -121,31 +129,25 @@ module mod_functions
         diameter = config%radius * 2
         layerThickness = diameter / config%numberOfLayers
         
-        ! calc depth for each layer
-        !z = sin(angle_layer * (k-1)) * config%radius
+
         !calc depth of the top of the shpere
         top_depth = config%depth - config%radius
         
         z = (k-0.5)*layerthickness + top_depth
-        !print*,z
+
         
         poly(k)%z1 = z - layerThickness / 2 
         poly(k)%z2 = z + layerThickness / 2 
-        !print*,'z1=',poly(k)%z1,'z2=',poly(k)%z2
-    
+
         ! loop over corners
         do i=1, config%numberOfEdges
-            ! deg to rad -> *pi/180
-            !poly(k)%x(i+1) = sin(i*angle_edge*pi/180)*radius_layer
-            !poly(k)%y(i+1) = cos(i*angle_edge*pi/180)*radius_layer
+            
             poly(k)%x(i) = sin(i*angle_edge)*radius_layer
             poly(k)%y(i) = cos(i*angle_edge)*radius_layer
             
         end do
         
-        ! the first corner ist equal to the last corner
-        !poly(k)%x(config%numberOfEdges+1) = poly(k)%x(1)
-        !poly(k)%y(config%numberOfEdges+1) = poly(k)%y(1)
+
     end do
 
     ! later: maybe dynamic number of edges... (fewer edges for small polygons...)
@@ -202,51 +204,24 @@ module mod_functions
     
     
     
-    subroutine profil_1d_x(config,poly,profil_1d)
+    subroutine profil_1d_x(config,poly)
     type(control_struct), intent(in) :: config
     type(polygon), allocatable, dimension(:), intent(in) :: poly
-    real, allocatable, dimension(:), intent(out) :: profil_1d
+    real, allocatable, dimension(:) :: profil_1d, grav_anal
     integer :: i
 
     
     allocate(profil_1d(config%vector_length_1D))
+    allocate(grav_anal(config%vector_length_1D))
 
     ! schleife ueber sum_grav
     do i = 1, config%vector_length_1D
 		    
         call sum_grav(config, poly, profil_1d(i), config%profil_vector_1D(i),0.)
+        call anal_solution(config, config%profil_vector_1D(i),grav_anal(i))
     end do
-
+	 call save_profile_1d(config, profil_1d, grav_anal)
     end subroutine profil_1d_x
-    
-    
-    
-
-    
-    
-    
-    
-    subroutine sum_grav(config, poly, grav_body, displacement_x,displacement_y)
-        type(control_struct), intent(in) :: config
-        type(polygon), allocatable, dimension(:), intent(in) :: poly
-        real, intent(in),optional :: displacement_x, displacement_y
-        real, intent(out) :: grav_body
-        integer :: pIndex
-        real, allocatable, dimension(:) :: grav_poly
-
-         !!!!DEALLOCATE EVERYWHERE
-        allocate(grav_poly(config%numberOfLayers))
-        
-        
-        do pIndex = 1, config%numberOfLayers
-            call calc_grav_polygon(config, poly(pIndex), grav_poly(pIndex),displacement_x,displacement_y)
-        end do
-        
-        grav_body = sum(grav_poly)
-
-        deallocate(grav_poly)
-    end subroutine sum_grav
-
 
 
 
@@ -311,17 +286,9 @@ module mod_functions
             d2(edge) = (x(nextEdge)*S(edge)) + (y(nextEdge)*C(edge))
             A(edge) = acos(((x(edge)*x(nextEdge)) + (y(edge)*y(nextEdge)))/(rk(edge)*rk(nextEdge)))
             
+            ! due to precision problems 
+			if(isnan(A(edge))) A(edge) = 0
 
-            if(isnan(A(edge))) then
-				print*,edge,nextEdge
-				
-				!print*, 'edge, x(edge),x(nextEdge),y(edge),y(nextEdge),rk(edge),rk(nextEdge)'
-				!print*, edge, x(edge),x(nextEdge),y(edge),y(nextEdge),rk(edge),rk(nextEdge)
-				!print*, ((x(edge)*x(nextEdge)) + (y(edge)*y(nextEdge)))/(rk(edge)*rk(nextEdge))
-				
-
-				!print*,'[',x(edge),',',y(edge),']','[',x(nextEdge),',',y(nextEdge),']'
-			end if
         end do
 
         
@@ -355,14 +322,12 @@ module mod_functions
             else
                 summe(edge) = 0
             end if
-            !if(isnan(summe(edge))) then
-			!	print*, x(edge),y(edge),A(edge)
-			!end if
+
             
  
         end do
         ! calc in mGal
-        gravi_poly = config%rho * G * sum(summe)*100000
+        gravi_poly = config%rho * G * sum(summe)*1.e5 
         
 
         deallocate(dx)
@@ -382,27 +347,126 @@ module mod_functions
         deallocate(A)
     end subroutine calc_grav_polygon
     
-    subroutine save_profile_1d(config,profil_1d)
-    type(control_struct), intent(in) :: config
-    real, dimension(:), intent(in) :: profil_1d
-    integer :: i,stat10
     
+    
+    subroutine sum_grav(config, poly, grav_body, displacement_x,displacement_y)
+        type(control_struct), intent(in) :: config
+        type(polygon), allocatable, dimension(:), intent(in) :: poly
+        real, intent(in),optional :: displacement_x, displacement_y
+        real, intent(out) :: grav_body
+        integer :: pIndex
+        real, allocatable, dimension(:) :: grav_poly
+
+         !!!!DEALLOCATE EVERYWHERE
+        allocate(grav_poly(config%numberOfLayers))
+        
+        
+        do pIndex = 1, config%numberOfLayers
+            call calc_grav_polygon(config, poly(pIndex), grav_poly(pIndex),displacement_x,displacement_y)
+        end do
+        
+        grav_body = sum(grav_poly)
+
+        deallocate(grav_poly)
+    end subroutine sum_grav
+    
+    
+    
+    subroutine save_profile_1d(config,profil_1d,grav_anal)
+    type(control_struct), intent(in) :: config
+    real, dimension(:), intent(in) :: profil_1d, grav_anal
+    integer :: i,stat10, stat11
+    
+    open(11, file='profil_1D_anal.dat', form='formatted', action='write', iostat=stat11)
+    if(stat11 .ne. 0) stop 'OPEN profil_1D_anal.dat FAILED'
     open(10, file='profil_1D.dat', form='formatted', action='write', iostat=stat10)
     if(stat10 .ne. 0) stop 'OPEN profil_1D.dat FAILED'
 
     do i = 1, config%vector_length_1D
         write(10,'(F13.8,x,F13.9)') config%profil_vector_1D(i), profil_1d(i)
+        write(11,'(F13.8,x,F13.9)') config%profil_vector_1D(i), grav_anal(i)
     end do
     
     close(10)
+    close(11)
     
     end subroutine save_profile_1d
     
     
+    	subroutine test_numberOfEdges(config)
+		type(control_struct), intent(inout) :: config
+		
+		! create analytical solution
+		
+		! open file
+		
+		! loop over numberOfEdges
+		
+			! Allocate polygon
+		
+			! calculate gravimetrical anomaly
+		
+			! compare to analytical solution
+		
+			! save differences to file (numberOfEdges	difference)
+		
+			! deallocate polygon
+		
+		! end loop
+		
+		! close file
+		
+	end subroutine test_numberOfEdges
+
+
+
+	subroutine test_numberOfLayers(config)
+		type(control_struct), intent(inout) :: config
+		
+		! create analytical solution
+		
+		! open file
+		
+		! loop over numberOfLayers
+		
+			! Allocate polygon
+		
+			! calculate gravimetrical anomaly
+		
+			! compare to analytical solution
+		
+			! save differences to file (numberOfLayers	difference)
+		
+			! deallocate polygon
+		
+		! end loop
+		
+		! close file
+		
+	end subroutine test_numberOfLayers
     
-    subroutine calc_analytical_solution( )
-        
-    end subroutine calc_analytical_solution
+    
+    
+	subroutine anal_solution(config, displacement_x, gravi_anal)
+		! after Blakely: Gravity and Magnatic Applications
+		
+		type(control_struct), intent(in) :: config
+		real, intent(in) :: displacement_x
+		real, intent(out) :: gravi_anal
+		real :: mass, pi, rx, rz, r
+		real, parameter :: G = 6.67384e-11
+		pi = 4.*atan(1.)
+		
+		mass = (4./3.) * pi * config%rho * config%radius**3 
+		
+		rx = displacement_x - 0.
+		rz = 0. - config%depth
+		
+		r = sqrt( rx**2 + rz**2 )
+		
+		gravi_anal = -((G * mass) / (r**2)) * 10e5
+
+    end subroutine anal_solution
     
     
 end module mod_functions

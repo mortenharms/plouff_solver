@@ -4,10 +4,7 @@ program plouff_solver
 	
 	type(polygon), allocatable, dimension(:) :: poly
 	type(control_struct) :: configurations 
-    real, allocatable, dimension(:) :: profil_1d
 	!integer :: j
-	
-
 	
 	
 	! read config-file at startup
@@ -19,14 +16,8 @@ program plouff_solver
 	!call output_sphere(configurations,poly)
 	
     call calc_profil_vector(configurations)
-    call profil_1d_x(configurations,poly,profil_1d)
+    call profil_1d_x(configurations,poly)
         
-    call save_profile_1d(configurations,profil_1d)
-    
-    
-	!do j=1,configurations%numberOfLayers
-	!	print*, 'layer:',j,'depth:',poly(j)%z1
-	!end do
+   
 
-
-end	program plouff_solver
+end program plouff_solver

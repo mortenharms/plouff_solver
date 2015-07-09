@@ -10,9 +10,9 @@
 rho=200
 depth = 4.
 radius = 2.
-numberOfEdges = 20
-numberOfLayers = 20
+numberOfEdges = 80
+numberOfLayers = 80
 !   1D Profil lentgh in [m]
-length_1D = 20
-tick_1D = 1
+length_1D = 80
+tick_1D = 0.1
 /

@@ -38,7 +38,7 @@ plot: $(EXECUTABLE)
 
 
 clean:
-	rm -f a.out $(EXECUTABLE) *.o *.mod
+	rm -f a.out $(EXECUTABLE) *.o *.mod *.dat *.ps
 
 #-----------------------------------
 # dependencies
