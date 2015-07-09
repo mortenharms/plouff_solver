@@ -4,7 +4,8 @@
 \usepackage{ngerman}
 \usepackage{graphicx}
 \usepackage{float}
-%\usepackage{natbib} % Zitate
+\usepackage{natbib} % Zitate
+\bibliographystyle{apalike}
 %\usepackage{hyperref} % eventuell am Schluss aktivieren
 \usepackage{url}
 \usepackage{array}
@@ -83,16 +84,32 @@
 \date{\today}
 \maketitle
 
+\section{Einleitung}
+In dieser Übung wird das erstellen eines Programms zur Berechnung der Schwerebeschleunigung eines beliebig geformten Störkörpers beschrieben. Aus Grundlage dient ein Programm, welches Donald Plouff 1976 in einem Paper \citep{plouff:1976} beschrieben hat. Das Programm wurde in der Programmiersprache Fortran geschrieben. Zum erstellen der Grafiken wurde das Programm Gnuplot verwendet. Die Qualität der Ergebnisse wird am Ende dieser Übung diskutiert
 
-%Inhaltsverzeichnis
-\tableofcontents
-\thispagestyle{empty}
-\newpage
+\section{Funktionsweise}
+Das Programm ist in der Lage, für ein beliebig geformten Störkörper, die Schwerebeschleunigung an jedem Punkt im Raum zu berechnen. Voraussetzung ist, dass der Störkörper durch \textit{k} \textit{n}-Eckige Polygone approximiert wird. In dem Paper \citep{talwani:1960}, auf welches sich Plouff bezieht wird die Schwerebeschleunigung eines Körpers bestimmt, indem der Körper durch Laminare angenähert wird. Plouff  nutzt eine analytische Lösung für das Integral nach der Tiefe um aus den Laminaren Polygone zu erzeugen, dies sich nach der Tiefe nicht veränderen. Es ist ihm damit möglich eine exakte Lösung für die Schwerebeschleunigung eines Polygons zu berechnen. Durch das geschickte Stapeln von Polygonen ist er in der Lage beliebig geformte Störkörper zu berechnen. Das Verfahren von Plouff hat den Vorteil, dass kein Fehler über die Integration entsteht. Der Fehler stammt nur aus der Approximation des Störkörpers durch \textit{n}-Eckige Polygone.
 
-\section{First Chapter}
+In der Subroutine \verb+calc_grav_polygon( ... )+ wird durch die Gleichung \ref{eq:plouff_3} der Anteil der Schwerebeschleunigung die jede Kante eines solchen Polygons zur Gesamtbeschleunigung beiträgt errechnet und aufsummiert.
+
+In der Subroutine \verb+sum_grav ( ... )+ werden die Ergebnisse für alle Polygone aufsummiert. 
+
+In der Subroutine \verb+profil_1d_x ( ... )+ Werden die Werte aus \verb+sum_grav ( ... )+ entlang der x-Achse ermittelt und rausgeschrieben.
+
+Wie in der Aufgabenstellung gefordert wird das Programm getestet mit der Approximation einer Kugel. Die Koordinaten der Eckpunkte werden in der Subroutine \verb+create_sphere+ berechnet.
+ 
+ \begin{equation}
+ g = ...
+ \label{eq:plouff_3}
+ \end{equation}
+ 
+\section{Ergebnisse}
+
+\section{Qualität der Ergebnisse}
 
 
 
 
 
+\bibliography{bibliography.bib}
  \end{document}
