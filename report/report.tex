@@ -1,0 +1,98 @@
+\documentclass[12pt, a4paper,bibliography=totoc, twoside,BCOR=12.5mm,abstracton]{scrartcl}
+
+\usepackage[utf8]{inputenc}
+\usepackage{ngerman}
+\usepackage{graphicx}
+\usepackage{float}
+%\usepackage{natbib} % Zitate
+%\usepackage{hyperref} % eventuell am Schluss aktivieren
+\usepackage{url}
+\usepackage{array}
+\usepackage{color}
+\usepackage{listings}
+\usepackage{caption}
+\usepackage{amsmath} %fancy Mathematik umgebung
+\usepackage[headsepline, plainheadsepline]{scrpage2}
+\usepackage{todonotes}
+
+% optionen fuer todonotes
+% \todo
+% \listoftodos
+% \missingfigure
+
+
+
+
+%Optionen für das Paket listings
+\definecolor{mygreen}{rgb}{0,0.6,0}
+\definecolor{mygray}{rgb}{0.5,0.5,0.5}
+\definecolor{mymauve}{rgb}{0.58,0,0.82}
+\lstset{ 
+  backgroundcolor=\color{white},   % choose the background color; you must add \usepackage{color} or \usepackage{xcolor}
+  basicstyle=\footnotesize,        % the size of the fonts that are used for the code
+  breaklines=true,                 % sets automatic line breaking
+  captionpos=b,                    % sets the caption-position to bottom
+  commentstyle=\color{mygreen},    % comment style
+  extendedchars=true,              % lets you use non-ASCII characters; for 8-bits encodings only, does not work with UTF-8
+  keepspaces=true,                 % keeps spaces in text, useful for keeping indentation of code (possibly needs columns=flexible)
+  keywordstyle=\color{blue},       % keyword style
+  language=C++,               	   % the language of the code
+  numbers=left,                    % where to put the line-numbers; possible values are (none, left, right)
+  numbersep=5pt,                   % how far the line-numbers are from the code
+  numberstyle=\tiny\color{mygray}, % the style that is used for the line-numbers)
+  stepnumber=1,                    % the step between two line-numbers. If it's 1, each line will be numbered
+  stringstyle=\color{mymauve},     % string literal style
+  tabsize=4,                       % sets default tabsize to 2 spaces
+}
+
+
+%Optionen für das Paket cations
+\captionsetup{	margin	=10pt,
+		font	=footnotesize,
+		labelfont=bf,
+		labelsep=colon,
+		format	=plain
+		}
+
+
+%Kopfzeilen formatierung
+\automark[section]{subsection}
+\clearscrheadings
+\ihead{}
+\ohead{\rightmark}
+\ofoot[scrplain-außen]{\thepage}
+
+%Kopfzeile mit Kapitelangabe
+\pagestyle{scrheadings} 
+
+%Gleichungsnummerierung folgt Kapiteln
+\numberwithin{equation}{section}
+ 
+%keine Einrückung bei neuen Absätzen
+\parindent 0pt
+
+%Titelseite
+%\title{Bildaufnahmen mit einer SO\textsubscript{2}-Kamera \\
+%\small{Bachelor Arbeit}}
+%\author{Morten Harms \\ Universität Hamburg \\ Institut für Geophysik}
+%\date{\today}
+
+\begin{document}
+\title{Lösung Übung 6 Potentialtheorie}
+\author{Henrik Grob \& Morten Harms}
+\date{\today}
+\maketitle
+
+
+%Inhaltsverzeichnis
+\tableofcontents
+\thispagestyle{empty}
+\newpage
+
+\section{First Chapter}
+
+
+
+
+
+ \end{document}
