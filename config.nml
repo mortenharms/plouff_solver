@@ -1,18 +1,16 @@
 ! INPUT FILE
 
 
-
-
-
 ! INPUT OBJECT
 &conf
 ! Dichte im Störkörper
+G = 6.67384e-11
 rho=200
 depth = 4.
 radius = 2.
-numberOfEdges = 80
-numberOfLayers = 80
+numberOfEdges = 21
+numberOfLayers = 21
 !   1D Profil lentgh in [m]
-length_1D = 80
+length_1D = 100
 tick_1D = 0.1
 /

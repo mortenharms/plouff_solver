@@ -3,18 +3,14 @@
 #
 
 ## display plot
-set title "for testing purpose one prism"
+set terminal postscript portrait enhanced mono dashed lw 1 "Helvetica" 14
+set output "one_prism.ps"
+set xlabel "Entfernung [m]"
+set ylabel "Entfernung [m]"
+set zlabel "Tiefe [m]"
 splot 'output_1_prism.dat' with lines notitle
 
-## save as postcript
-#set terminal postscript 
-#set output 'one_prism.ps'
-replot
 
-## save as png
-#set terminal png size 400,300 enhanced font "Helvetica,20"
-#set output 'one_prism.png'
-#replot
 
-pause -1
+
 
